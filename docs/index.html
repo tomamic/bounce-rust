@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>hello-wasm example</title>
+        <script>
+            timer = null;
+            loaded = {};
+            curr_keys = new Set();
+            prev_keys = new Set();
+            mouse_px = 0;
+            mouse_py = 0;
+            key_codes = {"Up": "ArrowUp", "Down": "ArrowDown",
+                                     "Left": "ArrowLeft", "Right": "ArrowRight",
+                                     "Space": "Spacebar", " ": "Spacebar",
+                                     "Esc": "Escape", "Del": "Delete"};
+            mouse_codes = ["LeftButton", "MiddleButton", "RightButton", "MouseButton"];
+
+            function js_keydown(e) {
+                if (e.repeat) return;
+                e.preventDefault();
+                e.stopPropagation();
+                key = key_codes[e.key] || e.key;
+                curr_keys.add(key);
+                if (key == "Pause") close_canvas();
+            }
+            function js_keyup(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                key = key_codes[e.key] || e.key;
+                curr_keys.delete(key);
+            }
+            function js_mousedown(e) {
+                key = mouse_codes[Math.min(e.button, 3)];
+                curr_keys.add(key);
+            }
+            function js_mouseup(e) {
+                key = mouse_codes[Math.min(e.button, 3)];
+                curr_keys.delete(key);
+            }
+            function js_mousemove(e) {
+                rect = canvas.getBoundingClientRect();
+                mouse_px = e.clientX - rect.left;
+                mouse_py = e.clientY - rect.top;
+            }
+            function js_tick() {
+                    tick();
+                    update_canvas();
+            }
+
+            function js_init_canvas(w, h) {
+                canvas = document.getElementById("g2d-canvas");
+                ctx = canvas.getContext("2d");
+                canvas.style.border = "1px solid silver";
+                canvas.style.margin = "40px";
+                canvas.style.width = canvas.width = w;
+                canvas.style.height = canvas.height = h;
+                set_color(127, 127, 127);
+                clear_canvas();
+            }
+            function update_canvas() {
+                prev_keys = new Set([...curr_keys]);
+            }
+            function set_color(r, g, b) {
+                ctx.strokeStyle = "rgb(" + r + "," + g + "," + b + ")";
+                ctx.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
+            }
+            function clear_canvas() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            function js_fill_circle(x, y, r) {
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, 2 * Math.PI);
+                ctx.closePath();
+                ctx.fill();
+            }
+            function js_fill_rect(x, y, w, h) {
+                ctx.fillRect(x, y, w, h);
+            }
+            function js_draw_text(txt, x, y, size, baseline, align) {
+                ctx.font = `${size}px sans-serif`;
+                ctx.textBaseline = baseline; ctx.textAlign = align;
+                ctx.fillText(txt, x, y);
+            }
+            function load_element(tag, src) {
+                if (!loaded[src]) {
+                        gh = "https://raw.githubusercontent.com/tomamic/fondinfo/master/examples/";
+                        loaded[src] = document.createElement(tag);
+                        loaded[src].src = src;
+                        loaded[src].onerror = () => { if (!elem.src.startsWith(gh)) elem.src = gh+src; };
+                }
+                return src;
+            }
+            function load_image(src) {
+                return load_element("IMG", src);
+            }
+            function js_draw_image(src, x, y, xc=0, yc=0, wc=0, hc=0) {
+                if (! wc * hc) ctx.drawImage(loaded[load_image(src)], pos.x, pos.y);
+                else ctx.drawImage(loaded[load_image(src)], xc, yc, wc, hc, x, y, wc, hc);
+            }
+            function main_loop(fps) {
+                delay = 1000 / fps;
+                //if (timer) clearInterval(timer);
+                //js_tick();
+                timer = setInterval(js_tick, delay);
+                document.addEventListener("keydown", js_keydown);
+                document.addEventListener("keyup", js_keyup);
+                document.addEventListener("mousedown", js_mousedown);
+                document.addEventListener("mouseup", js_mouseup);
+                document.addEventListener("mousemove", js_mousemove);
+            }
+            function close_canvas() {
+                if (timer) {
+                    clearInterval(timer);
+                    timer = null;
+                }
+                clear_canvas();
+                document.removeEventListener("keydown", js_keydown);
+                document.removeEventListener("keyup", js_keyup);
+                document.removeEventListener("mousemove", js_mousemove);
+                document.removeEventListener("mousedown", js_mousedown);
+                document.removeEventListener("mouseup", js_mouseup);
+                /* canvas.parentElement.removeChild(canvas);
+                canvas = null; */
+            }
+            function current_keys() {
+                return [...curr_keys].join();
+            }
+            function previous_keys() {
+                return [...prev_keys].join();
+            }
+            function mouse_clicked() {
+                return prev_keys.has("LeftButton") && !curr_keys.has("LeftButton");
+            }
+            function js_mouse_x() {
+                return mouse_px;
+            }
+            function js_mouse_y() {
+                return mouse_py;
+            }
+        </script>
+    </head>
+    <body>
+        <script type="module">
+            import init, {setup, tick} from "./pkg/hello_wasm.js";
+            init()
+                .then(() => {
+                    window.tick = tick;
+                    setup();
+                });
+        </script>
+        <canvas id="g2d-canvas"></canvas>
+    </body>
+</html>
