@@ -81,7 +81,7 @@ impl Arena {
 
         // divide the arena in tiles, for efficient collision detection
         let tile = pt(40, 40);
-        let n = self.size() / tile;
+        let n = (self.size() + tile - pt(1, 1)) / tile;  // ceil
         let mut cells: Vec<HashSet<usize>> = vec![];
         for _ in 0..n.x * n.y { cells.push(HashSet::new()); }
         for (i, b) in self.actors.iter().enumerate() {

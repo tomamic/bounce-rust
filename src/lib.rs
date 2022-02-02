@@ -12,7 +12,7 @@ pub struct BounceGui {
 }
 impl BounceGui {
     pub fn new() -> BounceGui {
-        let game = bounce::BounceGame::new(pt2d::pt(480, 360));
+        let game = bounce::BounceGame::new();
         BounceGui{game}
     }
     pub fn setup(&self) {

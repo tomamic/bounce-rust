@@ -136,8 +136,8 @@ pub struct BounceGame {
     playtime: i32
 }
 impl BounceGame {
-    pub fn new(size: Pt) -> BounceGame {
-        let mut arena = Arena::new(size);
+    pub fn new() -> BounceGame {
+        let mut arena = Arena::new(pt(480, 360));
         arena.spawn(Box::new(Turtle::new(80, 80)));
         arena.spawn(Box::new(Ghost::new(120, 80)));
         arena.spawn(Box::new(Ball::new(80, 40)));
