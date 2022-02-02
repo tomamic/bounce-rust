@@ -136,7 +136,7 @@ impl Actor for Turtle {
         if self.blinking > 0 && (self.blinking / 2) % 2 == 0 { None }
         else { Some(pt(0, 20)) }
     }
-    fn alive(&self) -> bool { true }
+    fn alive(&self) -> bool { self.lives > 0 }
     fn as_any(&self) -> &dyn Any { self }
 }
 
