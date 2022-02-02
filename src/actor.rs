@@ -21,7 +21,6 @@ pub struct ArenaStatus {
     curr_keys: String,
     prev_keys: String
 }
-#[allow(dead_code)]
 impl ArenaStatus {
     pub fn spawn(&mut self, b: Box<dyn Actor>) { self.spawned.push(b); }
     pub fn size(&self) -> Pt { self.size }
@@ -35,7 +34,6 @@ pub struct Arena {
     status: ArenaStatus,
     actors: Vec<Box<dyn Actor>>
 }
-#[allow(dead_code)]
 impl Arena {
     pub fn new(size: Pt) -> Arena {
         Arena{

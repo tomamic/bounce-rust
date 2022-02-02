@@ -1,25 +1,21 @@
 use std::any::Any;
 use std::cmp::{min, max};
-use std::marker::Copy;
 
 use crate::actor::*;
 use crate::rand::*;
 
 
-#[derive(Copy, Clone)]
 pub struct Ball {
     pos: Pt,
     step: Pt,
     size: Pt,
     speed: i32
 }
-#[allow(dead_code)]
 impl Ball {
     pub fn new(x: i32, y: i32) -> Ball {
         Ball{pos: pt(x, y), step: pt(4, 4), size: pt(20, 20), speed: 4}
     }
 }
-#[allow(dead_code)]
 impl Actor for Ball {
     fn act(&mut self, arena: &mut ArenaStatus, _others: &[&mut Box<dyn Actor>]) {
         let tl = self.pos + self.step;  // top-left
@@ -46,19 +42,16 @@ impl Actor for Ball {
 }
 
 
-#[derive(Copy, Clone)]
 pub struct Ghost {
     pos: Pt,
     speed: i32,
     visible: bool
 }
-#[allow(dead_code)]
 impl Ghost {
     pub fn new(x: i32, y: i32) -> Ghost {
         Ghost{pos: pt(x, y), speed: 4, visible: true}
     }
 }
-#[allow(dead_code)]
 impl Actor for Ghost {
     fn act(&mut self, arena: &mut ArenaStatus, _others: &[&mut Box<dyn Actor>]) {
         let scr = arena.size();
@@ -77,7 +70,6 @@ impl Actor for Ghost {
 }
 
 
-#[derive(Copy, Clone)]
 pub struct Turtle {
     pos: Pt,
     step: Pt,
@@ -86,7 +78,6 @@ pub struct Turtle {
     lives: i32,
     blinking: i32
 }
-#[allow(dead_code)]
 impl Turtle {
     pub fn new(x: i32, y: i32) -> Turtle {
         Turtle{pos: pt(x, y), step: pt(0, 0), size: pt(20, 20),
@@ -94,7 +85,6 @@ impl Turtle {
     }
     fn lives(&self) -> i32 { self.lives }
 }
-#[allow(dead_code)]
 impl Actor for Turtle {
     fn act(&mut self, arena: &mut ArenaStatus, _others: &[&mut Box<dyn Actor>]) {
         let keys = arena.current_keys();
@@ -145,7 +135,6 @@ pub struct BounceGame {
     arena: Arena,
     playtime: i32
 }
-#[allow(dead_code)]
 impl BounceGame {
     pub fn new(size: Pt) -> BounceGame {
         let mut arena = Arena::new(size);

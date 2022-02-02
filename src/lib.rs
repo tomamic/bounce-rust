@@ -1,11 +1,11 @@
 use wasm_bindgen::prelude::*;
 use std::cell::RefCell;
 
-mod actor;
-mod bounce;
-mod g2d;
-mod pt2d;
-mod rand;
+pub mod actor;
+pub mod bounce;
+pub mod g2d;
+pub mod pt2d;
+pub mod rand;
 
 pub struct BounceGui {
     game: bounce::BounceGame

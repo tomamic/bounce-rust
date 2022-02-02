@@ -4,7 +4,6 @@ use std::cell::RefCell;
 pub struct Rng {
     random: u32
 }
-#[allow(dead_code)]
 impl Rng {
     pub fn from_addr() -> Rng {
         let num = vec![1, 2, 3];
