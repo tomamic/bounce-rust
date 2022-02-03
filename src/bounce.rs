@@ -12,8 +12,8 @@ pub struct Ball {
     speed: i32
 }
 impl Ball {
-    pub fn new(x: i32, y: i32) -> Ball {
-        Ball{pos: pt(x, y), step: pt(4, 4), size: pt(20, 20), speed: 4}
+    pub fn new(pos: Pt) -> Ball {
+        Ball{pos: pos, step: pt(4, 4), size: pt(20, 20), speed: 4}
     }
 }
 impl Actor for Ball {
@@ -48,8 +48,8 @@ pub struct Ghost {
     visible: bool
 }
 impl Ghost {
-    pub fn new(x: i32, y: i32) -> Ghost {
-        Ghost{pos: pt(x, y), speed: 4, visible: true}
+    pub fn new(pos: Pt) -> Ghost {
+        Ghost{pos: pos, speed: 4, visible: true}
     }
 }
 impl Actor for Ghost {
@@ -79,8 +79,8 @@ pub struct Turtle {
     blinking: i32
 }
 impl Turtle {
-    pub fn new(x: i32, y: i32) -> Turtle {
-        Turtle{pos: pt(x, y), step: pt(0, 0), size: pt(20, 20),
+    pub fn new(pos: Pt) -> Turtle {
+        Turtle{pos: pos, step: pt(0, 0), size: pt(20, 20),
             speed: 2, lives: 3, blinking: 0}
     }
     fn lives(&self) -> i32 { self.lives }
@@ -116,7 +116,7 @@ impl Actor for Turtle {
             } else {
                 self.lives -= 1;
                 let pos = self.pos + pt(200, 200);
-                arena.spawn(Box::new(Ball::new(pos.x, pos.y)))
+                arena.spawn(Box::new(Ball::new(pos)))
             }
         }
     }
@@ -136,12 +136,23 @@ pub struct BounceGame {
     playtime: i32
 }
 impl BounceGame {
-    pub fn new() -> BounceGame {
-        let mut arena = Arena::new(pt(480, 360));
-        arena.spawn(Box::new(Turtle::new(80, 80)));
-        arena.spawn(Box::new(Ghost::new(120, 80)));
-        arena.spawn(Box::new(Ball::new(80, 40)));
-        arena.spawn(Box::new(Ball::new(40, 80)));
+    fn randpt(size: Pt) -> Pt {
+        let mut p = pt(randint(0, size.x), randint(0, size.y));
+        while (p.x - size.x / 2).pow(2) + (p.y - size.y / 2).pow(2) < 10000 {
+            p = pt(randint(0, size.x), randint(0, size.y));
+        }
+        return p;
+    }
+    pub fn new(size: Pt, nballs: i32, nghosts: i32) -> BounceGame {
+        let mut arena = Arena::new(size);
+        let size = size - pt(20, 20);
+        arena.spawn(Box::new(Turtle::new(size / pt(2, 2))));
+        for _ in 0..nballs {
+            arena.spawn(Box::new(Ball::new(BounceGame::randpt(size))));
+        }
+        for _ in 0..nghosts {
+            arena.spawn(Box::new(Ghost::new(BounceGame::randpt(size))));
+        }
         BounceGame{arena: arena, playtime: 120}
     }
     pub fn game_over(&self) -> bool { self.remaining_lives() <= 0 }
