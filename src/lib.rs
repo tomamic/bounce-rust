@@ -20,11 +20,8 @@ impl BounceGui {
         g2d::main_loop(30);
     }
     pub fn tick(&mut self) {
-        self.game.tick(g2d::current_keys());  // Game logic
-
         g2d::clear_canvas();
-        let actors = self.game.actors();
-        for b in actors.iter() {
+        for b in self.game.actors() {
             if let Some(img) = b.sprite() {
                 g2d::draw_image_clip("sprites.png".to_string(), b.pos(), img, b.size());
             } else {
@@ -41,6 +38,8 @@ impl BounceGui {
         } else if self.game.game_won() {
             g2d::alert("Game won".to_string());
             g2d::close_canvas();
+        } else {
+            self.game.tick(g2d::current_keys());  // Game logic
         }
     }
 }

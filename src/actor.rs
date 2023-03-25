@@ -5,8 +5,7 @@ pub use crate::pt2d::*;
 
 
 pub trait Actor {
-    fn act(&mut self, arena: &mut ArenaStatus, others: &[&mut Box<dyn Actor>]);
-    fn collide(&mut self, other: &dyn Actor, arena: &mut ArenaStatus);
+    fn act(&mut self, arena: &mut ArenaStatus);
     fn pos(&self) -> Pt;
     fn size(&self) -> Pt;
     fn sprite(&self) -> Option<Pt>;
@@ -14,36 +13,38 @@ pub trait Actor {
     fn as_any(&self) -> &dyn Any;
 }
 
-pub struct ArenaStatus {
+pub struct ArenaStatus<'a> {
     spawned: Vec<Box<dyn Actor>>,
+    collisions: Vec<&'a mut Box<dyn Actor>>,
+    others: Vec<&'a mut Box<dyn Actor>>,
     size: Pt,
     count: i32,
     curr_keys: String,
     prev_keys: String
 }
-impl ArenaStatus {
+impl ArenaStatus<'_> {
     pub fn spawn(&mut self, b: Box<dyn Actor>) { self.spawned.push(b); }
     pub fn size(&self) -> Pt { self.size }
     pub fn count(&self) -> i32 { self.count }
     pub fn current_keys(&self) -> Vec<&str> { self.curr_keys.split(",").collect() }
     pub fn previous_keys(&self) -> Vec<&str> { self.prev_keys.split(",").collect() }
+    pub fn collisions(&self) -> &Vec<&mut Box<dyn Actor>> { &self.collisions }
+    pub fn others(&self) -> &Vec<&mut Box<dyn Actor>> { &self.others }
 }
 
 
 pub struct Arena {
-    status: ArenaStatus,
+    size: Pt,
+    count: i32,
+    prev_keys: String,
     actors: Vec<Box<dyn Actor>>
 }
 impl Arena {
     pub fn new(size: Pt) -> Arena {
         Arena{
-            status: ArenaStatus {
-                spawned: vec![],
-                size: size,
-                count: 0,
-                curr_keys: String::new(),
-                prev_keys: String::new()
-            },
+            size: size,
+            count: 0,
+            prev_keys: String::new(),
             actors: vec![],
         }
     }
@@ -55,30 +56,6 @@ impl Arena {
             && tl2.y < br1.y && tl1.y < br2.y
     }
     pub fn tick(&mut self, keys: String) {
-        self.status.prev_keys = self.status.curr_keys.to_string();
-        self.status.curr_keys = keys;
-
-        for i in 0..self.actors.len() {
-            let (left, right) = self.actors.split_at_mut(i);
-            let (middle, right) = right.split_at_mut(1);
-            let b = &mut middle[0];
-            let others = left.iter_mut().chain(right.iter_mut());
-            b.act(&mut self.status, &others.collect::<Vec<_>>()[..]);
-        }
-
-        /*
-        for i in (1..self.actors.len()).rev() {
-            let (left, right) = self.actors.split_at_mut(i);
-            let b1 = &mut right[0];
-            for b2 in left.iter_mut() {
-                if Arena::check_collision(&**b1, &**b2) {
-                    b1.collide(&mut **b2, &mut self.status);
-                    b2.collide(&mut **b1, &mut self.status);
-                }
-            }
-        }
-        */
-
         // divide the arena in tiles, for efficient collision detection
         let tile = pt(40, 40);
         let n = (self.size() + tile - pt(1, 1)) / tile;  // ceil
@@ -94,10 +71,9 @@ impl Arena {
                 }
             }
         }
-        for i in (1..self.actors.len()).rev() {
-            let (left, right) = self.actors.split_at_mut(i);
-            let b1 = &mut right[0];
-            let (tl, br) = (b1.pos() / tile, (b1.pos() + b1.size()) / tile);
+        let mut collisions: Vec<HashSet<usize>> = vec![];
+        for (i, b) in self.actors.iter().enumerate() {
+            let (tl, br) = (b.pos() / tile, (b.pos() + b.size()) / tile);
             let mut neighs = HashSet::<usize>::new();
             for x in tl.x..=br.x {
                 for y in tl.y..=br.y {
@@ -106,24 +82,46 @@ impl Arena {
                     }
                 }
             }
-            for j in neighs.into_iter().filter(|&j| j < i) {
-                let b2 = &mut left[j];
-                if Arena::check_collision(&**b1, &**b2) {
-                    b1.collide(&mut **b2, &mut self.status);
-                    b2.collide(&mut **b1, &mut self.status);
-                }
-            }
+            neighs.remove(&i);
+            neighs.retain(|j| Arena::check_collision(&**b, &*self.actors[*j]));
+            collisions.push(neighs);
         }
 
-        self.status.count += 1;
-        self.actors.append(&mut self.status.spawned);
-        self.status.spawned.clear();
+        let mut spawned: Vec<Box<dyn Actor>> = vec![];
+        for i in 0..self.actors.len() {
+            let mut status = ArenaStatus {
+                spawned: vec![],
+                collisions: vec![],
+                others: vec![],
+                size: self.size,
+                count: self.count,
+                curr_keys: keys.to_string(),
+                prev_keys: self.prev_keys.to_string()
+            };
+            let (left, right) = self.actors.split_at_mut(i);
+            let (middle, right) = right.split_at_mut(1);
+            let b = &mut middle[0];
+            let others = left.iter_mut().chain(right.iter_mut());
+            for (j, o) in others.enumerate() {
+                if (&collisions[i]).contains(&(j + (j >= i) as usize)) {
+                    status.collisions.push(o);
+                } else {
+                    status.others.push(o);
+                }
+            }
+            b.act(&mut status);
+            spawned.append(&mut status.spawned);
+        }
+
+        self.count += 1;
+        self.actors.append(&mut spawned);
         self.actors.retain(|b| b.alive());
+        self.prev_keys = keys.to_string();
     }
-    pub fn spawn(&mut self, b: Box<dyn Actor>) { self.status.spawn(b); }
+    pub fn spawn(&mut self, b: Box<dyn Actor>) { self.actors.push(b); }
     pub fn actors(&self) -> &Vec<Box<dyn Actor>> { &self.actors }
-    pub fn size(&self) -> Pt { self.status.size() }
-    pub fn count(&self) -> i32 { self.status.count() }
+    pub fn size(&self) -> Pt { self.size }
+    pub fn count(&self) -> i32 { self.count }
 }
 
 //pub trait Actor { fn clone_dyn(&self) -> Box<dyn Actor>; }

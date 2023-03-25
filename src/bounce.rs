@@ -17,7 +17,15 @@ impl Ball {
     }
 }
 impl Actor for Ball {
-    fn act(&mut self, arena: &mut ArenaStatus, _others: &[&mut Box<dyn Actor>]) {
+    fn act(&mut self, arena: &mut ArenaStatus) {
+        for other in arena.collisions() {
+            if let Some(_) = other.as_any().downcast_ref::<Ghost>() {
+            } else {
+                let diff = self.pos - other.pos();
+                self.step.x = self.speed * if diff.x > 0 { 1 } else { -1 };
+                self.step.y = self.speed * if diff.y > 0 { 1 } else { -1 };
+            }
+        }
         let tl = self.pos + self.step;  // top-left
         let br = tl + self.size - arena.size();  // bottom-right
         if tl.x < 0 { self.step.x = self.speed; }
@@ -25,14 +33,6 @@ impl Actor for Ball {
         if br.x > 0 { self.step.x = -self.speed; }
         if br.y > 0 { self.step.y = -self.speed; }
         self.pos = self.pos + self.step;
-    }
-    fn collide(&mut self, other: &dyn Actor, _arena: &mut ArenaStatus) {
-        if let Some(_) = other.as_any().downcast_ref::<Ghost>() {
-        } else {
-            let diff = self.pos - other.pos();
-            self.step.x = self.speed * if diff.x > 0 { 1 } else { -1 };
-            self.step.y = self.speed * if diff.y > 0 { 1 } else { -1 };
-        }
     }
     fn pos(&self) -> Pt { self.pos }
     fn size(&self) -> Pt { self.size }
@@ -53,15 +53,15 @@ impl Ghost {
     }
 }
 impl Actor for Ghost {
-    fn act(&mut self, arena: &mut ArenaStatus, _others: &[&mut Box<dyn Actor>]) {
+    fn act(&mut self, arena: &mut ArenaStatus) {
         let scr = arena.size();
         let step = pt(randint(-1, 1) * self.speed, randint(-1, 1) * self.speed);
         self.pos = self.pos + step + scr;
         self.pos.x %= scr.x;
         self.pos.y %= scr.y;
         if randint(0, 99) == 0 { self.visible = ! self.visible; }
+        if randint(0, 999) == 0 { arena.spawn(Box::new(Ball::new(self.pos))); }
     }
-    fn collide(&mut self, _other: &dyn Actor, _arena: &mut ArenaStatus) { }
     fn sprite(&self) -> Option<Pt> { Some(pt(20, if self.visible { 0 } else { 20 })) }
     fn pos(&self) -> Pt { self.pos }
     fn size(&self) -> Pt { pt(20, 20) }
@@ -86,7 +86,15 @@ impl Turtle {
     fn lives(&self) -> i32 { self.lives }
 }
 impl Actor for Turtle {
-    fn act(&mut self, arena: &mut ArenaStatus, _others: &[&mut Box<dyn Actor>]) {
+    fn act(&mut self, arena: &mut ArenaStatus) {
+        if self.blinking == 0 {
+            for other in arena.collisions() {
+                if let Some(_) = other.as_any().downcast_ref::<Ball>() {
+                    self.blinking = 60;
+                    self.lives -= 1;
+                }
+            }
+        }
         let keys = arena.current_keys();
         self.step = pt(0, 0);
         if keys.contains(&"ArrowUp") {
@@ -104,21 +112,7 @@ impl Actor for Turtle {
         let scr = arena.size() - self.size;
         self.pos.x = min(max(self.pos.x, 0), scr.x);  // clamp
         self.pos.y = min(max(self.pos.y, 0), scr.y);  // clamp
-        if self.blinking > 0 {
-            self.blinking -= 1;
-        }
-    }
-    fn collide(&mut self, other: &dyn Actor, arena: &mut ArenaStatus) {
-        if self.blinking == 0 {
-            self.blinking = 60;
-            if let Some(ghost) = other.as_any().downcast_ref::<Ghost>() {
-                self.lives = if ghost.visible { 0 } else { self.lives + 1 };
-            } else {
-                self.lives -= 1;
-                let pos = self.pos + pt(200, 200);
-                arena.spawn(Box::new(Ball::new(pos)))
-            }
-        }
+        self.blinking = max(self.blinking - 1, 0);
     }
     fn pos(&self) -> Pt { self.pos }
     fn size(&self) -> Pt { self.size }
