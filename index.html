@@ -95,7 +95,7 @@
                 return load_element("IMG", src);
             }
             function js_draw_image(src, x, y, xc=0, yc=0, wc=0, hc=0) {
-                if (! wc * hc) ctx.drawImage(loaded[load_image(src)], pos.x, pos.y);
+                if (! (wc * hc)) ctx.drawImage(loaded[load_image(src)], x, y);
                 else ctx.drawImage(loaded[load_image(src)], xc, yc, wc, hc, x, y, wc, hc);
             }
             function main_loop(fps) {
