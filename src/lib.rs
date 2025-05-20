@@ -12,7 +12,8 @@ pub struct BounceGui {
 }
 impl BounceGui {
     pub fn new() -> BounceGui {
-        let game = bounce::BounceGame::new(pt2d::pt(480, 360), 3, 2);
+        let rng = rand::Rng::from_addr();
+        let game = bounce::BounceGame::new(pt2d::pt(480, 360), 3, 2, rng);
         BounceGui{game}
     }
     pub fn setup(&self) {

@@ -45,11 +45,12 @@ impl Actor for Ball {
 pub struct Ghost {
     pos: Pt,
     speed: i32,
-    visible: bool
+    visible: bool,
+    rng: Rng
 }
 impl Ghost {
-    pub fn new(pos: Pt) -> Ghost {
-        Ghost{pos: pos, speed: 4, visible: true}
+    pub fn new(pos: Pt, rng: Rng) -> Ghost {
+        Ghost{pos: pos, speed: 4, visible: true, rng: rng}
     }
 }
 impl Actor for Ghost {
@@ -59,8 +60,8 @@ impl Actor for Ghost {
         self.pos = self.pos + step + scr;
         self.pos.x %= scr.x;
         self.pos.y %= scr.y;
-        if randint(0, 99) == 0 { self.visible = ! self.visible; }
-        if randint(0, 999) == 0 { arena.spawn(Box::new(Ball::new(self.pos))); }
+        if self.rng.randint(0, 99) == 0 { self.visible = ! self.visible; }
+        if self.rng.randint(0, 999) == 0 { arena.spawn(Box::new(Ball::new(self.pos))); }
     }
     fn sprite(&self) -> Option<Pt> { Some(pt(20, if self.visible { 0 } else { 20 })) }
     fn pos(&self) -> Pt { self.pos }
@@ -130,22 +131,22 @@ pub struct BounceGame {
     playtime: i32
 }
 impl BounceGame {
-    fn randpt(size: Pt) -> Pt {
-        let mut p = pt(randint(0, size.x), randint(0, size.y));
+    fn randpt(size: Pt, mut rng: Rng) -> Pt {
+        let mut p = pt(rng.randint(0, size.x), rng.randint(0, size.y));
         while (p.x - size.x / 2).pow(2) + (p.y - size.y / 2).pow(2) < 10000 {
-            p = pt(randint(0, size.x), randint(0, size.y));
+            p = pt(rng.randint(0, size.x), rng.randint(0, size.y));
         }
         return p;
     }
-    pub fn new(size: Pt, nballs: i32, nghosts: i32) -> BounceGame {
+    pub fn new(size: Pt, nballs: i32, nghosts: i32, rng: Rng) -> BounceGame {
         let mut arena = Arena::new(size);
         let size = size - pt(20, 20);
         arena.spawn(Box::new(Turtle::new(size / pt(2, 2))));
         for _ in 0..nballs {
-            arena.spawn(Box::new(Ball::new(BounceGame::randpt(size))));
+            arena.spawn(Box::new(Ball::new(BounceGame::randpt(size, rng))));
         }
         for _ in 0..nghosts {
-            arena.spawn(Box::new(Ghost::new(BounceGame::randpt(size))));
+            arena.spawn(Box::new(Ghost::new(BounceGame::randpt(size, rng), rng)));
         }
         BounceGame{arena: arena, playtime: 120}
     }

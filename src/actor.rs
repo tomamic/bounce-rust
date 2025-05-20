@@ -51,7 +51,7 @@ impl Arena {
     pub fn check_collision(b1: &dyn Actor, b2: &dyn Actor) -> bool {
         let (tl1, br1) = (b1.pos(), b1.pos() + b1.size());
         let (tl2, br2) = (b2.pos(), b2.pos() + b2.size());
-        (b1 as *const dyn Actor) != (b2 as *const dyn Actor)
+        !std::ptr::addr_eq(b1 as *const dyn Actor, b2 as *const dyn Actor)
             && tl2.x < br1.x && tl1.x < br2.x
             && tl2.y < br1.y && tl1.y < br2.y
     }
